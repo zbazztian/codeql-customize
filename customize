@@ -39,7 +39,7 @@ def customize(args):
       )
     )
     if rtcp and isdir(rtcp[0]):
-      searchdirs.append(tcp)
+      searchdirs.append(rtcp)
   else:
     searchdirs = args.search_path.split(':')
 
