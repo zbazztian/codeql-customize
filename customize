@@ -1,0 +1,137 @@
+#!/usr/bin/env python3
+import argparse
+import os
+import glob
+from os.path import join, isdir, dirname, isfile
+import yaml
+import re
+import sys
+import shutil
+
+CUSTOMIZATIONS_LIB_NAME = 'injected_customization_lib'
+
+def error(msg):
+  print('ERROR: ' + msg)
+  sys.exit(1)
+
+
+def info(msg):
+  print('INFO: ' + msg)
+
+
+def customize(args):
+  if not isfile(args.qll):
+    error('"{qll}" is not a file!'.format(qll=args.qll))
+
+  if not args.search_path:
+    searchdirs = []
+
+    # if no search paths were given, we will try to find something
+    # under the known locations
+    rtcp = glob.glob(
+      join(
+        os.environ.get('RUNNER_TOOL_CACHE', ''),
+        'CodeQL',
+        '*',
+        'x64',
+        'codeql',
+        'qlpacks'
+      )
+    )
+    if rtcp and isdir(rtcp[0]):
+      searchdirs.append(tcp)
+  else:
+    searchdirs = args.search_path.split(':')
+
+  info('Search directories: {dirs}.'.format(dirs=searchdirs))
+
+  # try to locate the root CodeQL pack for the given language
+  QLPACK_NAME_PATTERN = re.compile('^\s*name:\s+(\S+)\s*$', re.MULTILINE)
+  root_pack = None
+  root_pack_name = 'codeql-' + args.language
+  for sd in searchdirs:
+    for qlp in glob.glob(join(sd, '**', 'qlpack.yml'), recursive=True):
+      with open(qlp, 'r') as f:
+        m = QLPACK_NAME_PATTERN.search(f.read())
+        if m:
+          qlpack_name = m.group(1)
+          if qlpack_name == root_pack_name:
+            root_pack = dirname(qlp)
+
+  if not root_pack:
+    error(
+      'CodeQL root pack for language "{lang}" not found under given search paths.'.format(
+        lang = args.language
+      )
+    )
+
+  info(
+    'Detected root CodeQL pack for language "{lang}" under "{path}".'.format(
+      lang=args.language,
+      path=root_pack
+    )
+  )
+
+  rootlib = join(root_pack, args.language + '.qll')
+
+  if not isfile(rootlib):
+    error(
+      'No root library ("{rootlib}") found for in root pack "{rootpack}"!'.format(
+        rootlib=rootlib,
+        rootpack=root_pack
+      )
+    )
+  else:
+    info('Detected root library "{rootlib}".'.format(rootlib=rootlib))
+
+  # copy customizations file
+  customizations_lib = join(root_pack, CUSTOMIZATIONS_LIB_NAME + '.qll')
+  info(
+    'Copying "{fromp}" to "{top}".'.format(
+      fromp=args.qll,
+      top=customizations_lib
+    )
+  )
+  shutil.copy(args.qll, customizations_lib)
+
+  IMPORT_CUSTOMIZATIONS_LIB_PATTERN = re.compile(
+    '^\s*import\s+' + re.escape(CUSTOMIZATIONS_LIB_NAME) + '\s*$',
+    re.MULTILINE
+  )
+
+  info('Injecting customizations into "{rootlib}" ...'.format(rootlib=rootlib))
+
+  with open(rootlib, 'r') as f:
+    contents = f.read()
+
+  if IMPORT_CUSTOMIZATIONS_LIB_PATTERN.search(contents):
+    info('Customizations were already injected. Nothing to be done.')
+  else:
+    contents = contents + '\n' + 'import ' + CUSTOMIZATIONS_LIB_NAME
+    with open(rootlib, 'w') as f:
+      f.write(contents)
+
+
+def main():
+  parser = argparse.ArgumentParser(
+    prog='customize'
+  )
+  parser.add_argument(
+    '--qll',
+    help='Input CodeQL library file',
+    required=True
+  )
+  parser.add_argument(
+      '--search-path',
+      help='A colon-separated list of directories under which QL packs may be found.',
+      default=None
+  )
+  parser.add_argument(
+      '--language',
+      help='The CodeQL language to be customized.',
+      required=True
+  )
+  customize(parser.parse_args())
+
+
+main()
