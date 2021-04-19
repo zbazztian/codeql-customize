@@ -19,6 +19,18 @@ def info(msg):
   print('INFO: ' + msg)
 
 
+def find_rootpack(searchdirs, lang):
+  QLPACK_NAME_PATTERN = re.compile('^\s*name:\s+(\S+)\s*$', re.MULTILINE)
+  for sd in searchdirs:
+    for qlp in glob.glob(join(sd, '**', 'qlpack.yml'), recursive=True):
+      with open(qlp, 'r') as f:
+        m = QLPACK_NAME_PATTERN.search(f.read())
+        if m:
+          if m.group(1) == 'codeql-' + lang:
+            return dirname(qlp)
+  return None
+
+
 def customize(args):
   if not isfile(args.qll):
     error('"{qll}" is not a file!'.format(qll=args.qll))
@@ -28,9 +40,11 @@ def customize(args):
 
     # if no search paths were given, we will try to find something
     # under the known locations
-    rtcp = glob.glob(
+    candidates = glob.glob(
+      os.environ.get('CODEQL_DIST', '')
+    ) + glob.glob(
       join(
-        os.environ.get('RUNNER_TOOL_CACHE', ''),
+        os.environ.get('RUNNER_TOOL_CACHE', '/opt/hostedtoolcache'),
         'CodeQL',
         '*',
         'x64',
@@ -38,25 +52,15 @@ def customize(args):
         'qlpacks'
       )
     )
-    if rtcp and isdir(rtcp[0]):
-      searchdirs.append(rtcp[0])
+    if c in candidates:
+      searchdirs.append(c)
   else:
     searchdirs = args.search_path.split(':')
 
   info('Search directories: {dirs}.'.format(dirs=searchdirs))
 
   # try to locate the root CodeQL pack for the given language
-  QLPACK_NAME_PATTERN = re.compile('^\s*name:\s+(\S+)\s*$', re.MULTILINE)
-  root_pack = None
-  root_pack_name = 'codeql-' + args.language
-  for sd in searchdirs:
-    for qlp in glob.glob(join(sd, '**', 'qlpack.yml'), recursive=True):
-      with open(qlp, 'r') as f:
-        m = QLPACK_NAME_PATTERN.search(f.read())
-        if m:
-          qlpack_name = m.group(1)
-          if qlpack_name == root_pack_name:
-            root_pack = dirname(qlp)
+  root_pack = find_rootpack(searchdirs, args.language)
 
   if not root_pack:
     error(

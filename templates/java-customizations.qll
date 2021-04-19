@@ -3,23 +3,29 @@ import semmle.code.java.dataflow.FlowSteps
 
 /////////////////////////// CUSTOMIZE HERE ////////////////////////////////////////////////////
 string taintedCalls() {
-  result = "org.apache.ofbiz.base.util.UtilIO.copy" or // all invocations of this method return tainted data
-  result = "%.copy" // ditto, just matching on the callable's name
+  result = [
+    "org.apache.ofbiz.base.util.UtilIO.copy", // all invocations of this method return tainted data
+    "%.copy"                                  // ditto, just matching on the callable's name
+  ]
 }
 
 string taintedParams() {
-  result = "org.apache.ofbiz.base.util.UtilIO.copy.0" or // exact match with exact index
-  result = "com.org.Type.myMethod.1" or // ditto
-  result = "%.myMethod.1" or // match just on the name of a method and an index
-  result = "%.myMethod.%" // match just on the name of a method and all its parameters
+  result = [
+    "org.apache.ofbiz.base.util.UtilIO.copy.0", // exact match with exact index
+    "com.org.Type.myMethod.1", // ditto
+    "%.myMethod.1", // match just on the name of a method and an index
+    "%.myMethod.%" // match just on the name of a method and all its parameters
+  ]
 }
 
 string paramsWhichPassTaintThroughToTheReturnValue() {
-  result = "com.org.Type.myMethod.0" or // taint passes from first parameter to return value
-  result = "com.org.OtherType.myMethod.1" or // ditto, but for 2nd parameter
-  result = "%.myMethod.0" or // use placeholder
-  result = "%.myMethod.%" or // use placeholder for name and index
-  result = "%.myMethod.-1" // taint passes from qualifier to return value
+  result = [
+    "com.org.Type.myMethod.0", // taint passes from first parameter to return value
+    "com.org.OtherType.myMethod.1", // ditto, but for 2nd parameter
+    "%.myMethod.0", // use placeholder
+    "%.myMethod.%", // use placeholder for name and index
+    "%.myMethod.-1" // taint passes from qualifier to return value
+  ]
 }
 ///////////////////////////////////////////////////////////////////////////////////////////////
 

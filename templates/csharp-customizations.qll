@@ -4,21 +4,27 @@ import semmle.code.csharp.security.dataflow.SqlInjection::SqlInjection as SqlInj
 
 /////////////////////////// CUSTOMIZE HERE ////////////////////////////////////////////////////
 string taintedCalls() {
-  result = "System.Environment.GetEnvironmentVariable" or // all invocations of this method return tainted data
-  result = "%.copy" // ditto, just matching on the callable's name
+  result = [
+    "System.Environment.GetEnvironmentVariable", // all invocations of this method return tainted data
+    "%.copy"                                     // ditto, just matching on the callable's name
+  ]
 }
 
 string taintedParams() {
-  result = "Dapper.Samples.Advanced.SQLServerFeatures.PrepareDatabase:0" or // exact match with exact index
-  result = "com.org.Type.myMethod:1" or // ditto
-  result = "%.myMethod:1" or // match just on the name of a method and an index
-  result = "%.myMethod:%" // match just on the name of a method and all its parameters
+  result = [
+    "Dapper.Samples.Advanced.SQLServerFeatures.PrepareDatabase:0", // exact match with exact index
+    "com.org.Type.myMethod:1", // ditto
+    "%.myMethod:1", // match just on the name of a method and an index
+    "%.myMethod:%" // match just on the name of a method and all its parameters
+  ]
 }
 
 // call arguments pertaining to these parameters will be treated as sql injection sinks
 string sqlInjectionSinks() {
-  result = "Dapper.SqlMapper.Query%:1" or
-  result = "%Execute%:1"
+  result = [
+    "Dapper.SqlMapper.Query%:1",
+    "%Execute%:1"
+  ]
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////
