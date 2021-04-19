@@ -41,7 +41,7 @@ def customize(args):
     # if no search paths were given, we will try to find something
     # under the known locations
     candidates = glob.glob(
-      os.environ.get('CODEQL_DIST', '')
+      os.environ.get('CODEQL_DIST', '/does/not/exist')
     ) + glob.glob(
       join(
         os.environ.get('RUNNER_TOOL_CACHE', '/opt/hostedtoolcache'),
