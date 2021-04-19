@@ -52,7 +52,7 @@ def customize(args):
         'qlpacks'
       )
     )
-    if c in candidates:
+    for c in candidates:
       searchdirs.append(c)
   else:
     searchdirs = args.search_path.split(':')
