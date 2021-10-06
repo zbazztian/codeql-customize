@@ -26,7 +26,7 @@ def find_rootpack(searchdirs, lang):
       with open(qlp, 'r') as f:
         m = QLPACK_NAME_PATTERN.search(f.read())
         if m:
-          if m.group(1) == 'codeql-' + lang:
+          if m.group(1) == 'codeql/' + lang + '-all':
             return dirname(qlp)
   return None
 

@@ -66,3 +66,11 @@ class CallablesWhichReturnTaintFromParams extends TaintPreservingCallable {
 
   override predicate returnsTaintFrom(int arg) { arg = paramIdx }
 }
+
+
+/*
+class ATS extends AdditionalTaintStep {
+  override predicate step(DataFlow::Node node1, DataFlow::Node node2){
+  }
+}
+*/
